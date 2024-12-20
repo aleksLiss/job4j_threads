@@ -14,10 +14,9 @@ public class ThreadState {
         );
         first.start();
         second.start();
-        while (second.getState() != Thread.State.TERMINATED) {
-            while (first.getState() != Thread.State.TERMINATED) {
-                continue;
-            }
+        while (second.getState() != Thread.State.TERMINATED
+                && first.getState() != Thread.State.TERMINATED) {
+            continue;
         }
         System.out.println("All threads have completed their work");
     }
