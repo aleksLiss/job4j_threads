@@ -1,7 +1,6 @@
 package ru.job4j.ref;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,8 +19,8 @@ public class UserCache {
 
     public List<User> findAll() {
         List<User> usersList = new CopyOnWriteArrayList<>();
-        for (Map.Entry<Integer, User> entry : users.entrySet()) {
-            usersList.add(User.of(entry.getValue().getName()));
+        for (User user : users.values()) {
+            usersList.add(User.of(user.getName()));
         }
         return usersList;
     }
