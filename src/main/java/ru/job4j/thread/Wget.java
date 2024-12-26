@@ -5,9 +5,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class Wget implements Runnable {
     private final String url;
@@ -22,28 +23,29 @@ public class Wget implements Runnable {
     @Override
     public void run() {
         try {
-            long startAt = System.currentTimeMillis();
-            File file = new File("tmp.xml");
+            String fileName = Paths.get(new URI(url).getPath())
+                    .getFileName()
+                    .toString();
+            File file = new File("wget_" + fileName);
             try (InputStream input = new URL(url).openStream();
                  FileOutputStream output = new FileOutputStream(file)) {
-                System.out.println("Open connection: " + (System.currentTimeMillis() - startAt) + " ms");
                 byte[] dataBuffer = new byte[512];
                 int bytesRead;
+                long t = 0L;
+                long ms = 0L;
                 while ((bytesRead = input.read(dataBuffer, 0, dataBuffer.length)) != -1) {
                     long downloadAt = System.nanoTime();
                     output.write(dataBuffer, 0, bytesRead);
-                    System.out.print("Read 512 bytes : " + (System.nanoTime() - downloadAt) + " nano. ");
-                    long t = System.nanoTime() - downloadAt;
-                    long ms = t / speed;
-                    if (speed < t) {
-                        System.out.printf("Delay: %s ms.%n", ms);
-                        Thread.sleep(ms);
-                    }
+                    t += System.nanoTime() - downloadAt;
+                    ms += t / speed;
+                }
+                if (ms < speed) {
+                    Thread.sleep(ms);
+                    System.out.printf("Delay: %d ms.%n", ms);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            System.out.println(Files.size(file.toPath()) + "bytes");
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -64,6 +66,9 @@ public class Wget implements Runnable {
     }
 
     public static void main(String[] args) {
+        if (args.length < 2) {
+            throw new IllegalArgumentException("Arguments must be specified.");
+        }
         String url = args[0];
         int speed = Integer.parseInt(args[1]);
         if (!isValidURL(url)) {
