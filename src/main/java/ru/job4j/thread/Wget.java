@@ -1,9 +1,6 @@
 package ru.job4j.thread;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -22,32 +19,31 @@ public class Wget implements Runnable {
 
     @Override
     public void run() {
-        try {
-            String fileName = Paths.get(new URI(url).getPath())
-                    .getFileName()
-                    .toString();
-            File file = new File("wget_" + fileName);
-            try (InputStream input = new URL(url).openStream();
-                 FileOutputStream output = new FileOutputStream(file)) {
-                byte[] dataBuffer = new byte[512];
-                int bytesRead;
-                long t = 0L;
-                long ms = 0L;
-                while ((bytesRead = input.read(dataBuffer, 0, dataBuffer.length)) != -1) {
-                    long downloadAt = System.nanoTime();
-                    output.write(dataBuffer, 0, bytesRead);
-                    t += System.nanoTime() - downloadAt;
-                    ms += t / speed;
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                String fileName = Paths.get(new URI(url).getPath())
+                        .getFileName()
+                        .toString();
+                File file = new File("wget_" + fileName);
+                try (BufferedInputStream in = new BufferedInputStream(new URL(url).openStream());
+                     FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+                    byte[] dataBuffer = new byte[1024];
+                    int bytesRead;
+                    long time = System.currentTimeMillis();
+                    while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                        fileOutputStream.write(dataBuffer, 0, bytesRead);
+                        long rsl = System.currentTimeMillis() - time;
+                        int speedTest = (int) (1024 / (rsl / 1000));
+                        if (speedTest < speed) {
+                            Thread.sleep((speed - speedTest) * 1000);
+                            System.out.printf("Delay: %d%n", (speed - speedTest) * 1000);
+                        }
+                        time = System.currentTimeMillis();
+                    }
                 }
-                if (ms < speed) {
-                    Thread.sleep(ms);
-                    System.out.printf("Delay: %d ms.%n", ms);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                Thread.currentThread().interrupt();
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
         }
     }
 
